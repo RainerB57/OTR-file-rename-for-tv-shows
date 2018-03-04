@@ -43,7 +43,7 @@ class Fernsehserien_de_Scraper(object):
             else:
                 title = self.name.replace(' ','-')
 
-            webpage = urlopen('http://www.fernsehserien.de/'+title+'/episodenguide').read()
+            webpage = urlopen('https://www.fernsehserien.de/'+title+'/episodenguide').read()
 
             if not(os.path.isdir(Fernsehserien_de_Scraper.CACHE_FOLDER)):
                 os.mkdir(Fernsehserien_de_Scraper.CACHE_FOLDER)
@@ -138,8 +138,8 @@ class Fernsehserien_de_Scraper(object):
                 title = serieslinks[self.name.replace(' ','-')]
             else:
                 title = self.name.replace(' ','-')
-            logging.info('Loading: http://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1')
-            webpage = urlopen('http://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1').read()
+            logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1')
+            webpage = urlopen('https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1').read()
             
 
             if not(os.path.isdir(Fernsehserien_de_Scraper.CACHE_FOLDER)):
