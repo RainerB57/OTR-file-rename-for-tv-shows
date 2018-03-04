@@ -18,6 +18,7 @@ import codecs
 from types import *
 import logging
 import sys
+#from string import maketrans   # Required to call maketrans function. # rb
 
 from Fernsehserien_de_Scraper import Fernsehserien_de_Scraper
 
@@ -41,8 +42,8 @@ class OTR_Rename(object):
         m2=re.search("(S[0-9]{2}E[0-9]{2})",title)
         if type(m2) is not NoneType:
             title = title.split('_'+m2.group(1))[0]
-        title = title.split('__')[0] # for US series SeriesName__EpisodeTitle (problems with shows like CSI__NY)
-
+            title = title.split('__')[0] # for US series SeriesName__EpisodeTitle (problems with shows like CSI__NY)
+			
         self.show = title.replace("_",' ')
         self.epdate = m.group(2)
         self.eptime = m.group(3)
@@ -72,6 +73,8 @@ class OTR_Rename(object):
             if self.lang == 'de':
                 idx = self.checkFollowingDateEntry(self.epdate, self.eptime, d, time_list, idx-1 if idx>0 else idx) #Search for closest eptime on the date
             date, season, episode, title = d[idx], s[idx], e[idx], t[idx]
+            if len(season) == 1:
+                season = "0" + season
         else: # No match
             date, season, episode, title = None, None, None, None
         
@@ -83,7 +86,10 @@ class OTR_Rename(object):
         if None in (date, season, episode, title):
             newfilename = False
         else:
-            newfilename = self.show + '.' + 'S' + season + 'E' + episode + '.' + title + self.extension
+            newfilename = self.show + ' '  + season + 'x' + episode + ' ' + title + self.extension  #rb
+            #newfilename = self.show + '.' + 'S' + season + 'E' + episode + '.' + title + self.extension
+            
+            
 
         return newfilename
 
@@ -99,12 +105,16 @@ class OTR_Rename(object):
         log.write("input  " + self.file + "\n")
 
         newfilename = self.buildNewFilename()
+        chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss','Ö':'OE','Ä':'AE','Ü':'UE'} # rb Umlaute konvertieren
         if newfilename != False:
-            newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|') 
+            for char in chars:  #rb
+                newfilename = newfilename.replace(char,chars[char])
+            newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|')
             newpath = os.path.join(self.path,self.show + '/' + newfilename)
             logging.debug('Encoding ist %s' %  sys.stdin.encoding)
+            #log.write("newpath: " + newpath)  #zum testen
             newpath = u''.join(newpath).encode('utf-8').strip()
-
+                                                			
             if not(os.path.isfile(newpath)):
                 move(os.path.join(self.path,self.file), newpath)
                 log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
