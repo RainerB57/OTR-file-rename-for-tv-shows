@@ -13,7 +13,7 @@ For Beautiful Soup on Windows:
 
 Download easy_setup (https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py)
 ````
-$ python ez_setup.oy
+$ python ez_setup.py   # $ python ez_setup.oy
 $ easy_install BeautifulSoup4
 ````
 
