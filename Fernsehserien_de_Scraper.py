@@ -38,11 +38,12 @@ class Fernsehserien_de_Scraper(object):
             logging.info('Use local file...')       
             webpage = urlopen(cache)
         else:
+            logging.info('self.name:' + self.name)
+            
             if serieslinks.has_key(self.name):
                 title = serieslinks[self.name]
             else:
                 title = self.name.replace(' ','-')
-
             webpage = urlopen('https://www.fernsehserien.de/'+title+'/episodenguide').read()
 
             if not(os.path.isdir(Fernsehserien_de_Scraper.CACHE_FOLDER)):
@@ -134,6 +135,7 @@ class Fernsehserien_de_Scraper(object):
             logging.info("Using recent cache file...")        
             webpage = urlopen(cache)
         else:
+
             if serieslinks.has_key(self.name.replace(' ','-')):
                 title = serieslinks[self.name.replace(' ','-')]
             else:

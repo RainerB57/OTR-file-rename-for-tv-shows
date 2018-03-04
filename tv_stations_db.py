@@ -50,5 +50,9 @@ senderlinks = {
 'eurosport' : 'eurosport',
 'sport1' : 'sport1',
 'n24' : 'n24',
-'phoenix' : 'phoenix'
+'phoenix' : 'phoenix',
+'one' : 'one',
+'servustv' :'servustv-deutschland',
+'stv' :'servustv-deutschland',
+'tv24' :'tv24'
 }

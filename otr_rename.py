@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 OTR file rename for tv-shows
@@ -74,7 +74,7 @@ class OTR_Rename(object):
                 idx = self.checkFollowingDateEntry(self.epdate, self.eptime, d, time_list, idx-1 if idx>0 else idx) #Search for closest eptime on the date
             date, season, episode, title = d[idx], s[idx], e[idx], t[idx]
             if len(season) == 1:
-                season = "0" + season
+                season = "0" + season  #rb Season 2-stellig
         else: # No match
             date, season, episode, title = None, None, None, None
         
@@ -84,13 +84,11 @@ class OTR_Rename(object):
         # Get filename from the scraped webpage
         date, season, episode, title = self.queryEpisodeInfo()
         if None in (date, season, episode, title):
-            newfilename = False
+            newfilename = ''  #rb False 
+
         else:
             newfilename = self.show + ' '  + season + 'x' + episode + ' ' + title + self.extension  #rb
             #newfilename = self.show + '.' + 'S' + season + 'E' + episode + '.' + title + self.extension
-            
-            
-
         return newfilename
 
     def copy_and_sort(self):
@@ -112,14 +110,17 @@ class OTR_Rename(object):
             newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|')
             newpath = os.path.join(self.path,self.show + '/' + newfilename)
             logging.debug('Encoding ist %s' %  sys.stdin.encoding)
-            #log.write("newpath: " + newpath)  #zum testen
+            #log.write("newpath: " + newpath)  #rb zum testen
             newpath = u''.join(newpath).encode('utf-8').strip()
                                                 			
             if not(os.path.isfile(newpath)):
-                move(os.path.join(self.path,self.file), newpath)
-                log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
-                log.write("output " + newpath + "\n\n")
-                logging.info(self.file + ' moved to: \n' + newpath +'\n')  
+				if not(len(newfilename)==0):
+					move(os.path.join(self.path,self.file), newpath)
+					log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
+					log.write("output " + newpath + "\n\n")
+					logging.info(self.file + ' moved to: \n' + newpath +'\n')  
+				else:
+					logging.info('Filename hat 0 Bytes    ==> Skip file') 
             else:
                 logging.info('File exists already in the target directory \n    ==> Skip file') 
         else:
