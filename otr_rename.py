@@ -43,8 +43,8 @@ class OTR_Rename(object):
         if type(m2) is not NoneType:
             title = title.split('_'+m2.group(1))[0]
             title = title.split('__')[0] # for US series SeriesName__EpisodeTitle (problems with shows like CSI__NY)
-			
-        self.show = title.replace("_",' ')
+            
+        self.show = title.replace("_",' ').strip()
         self.epdate = m.group(2)
         self.eptime = m.group(3)
         self.sender = m.group(4)
@@ -92,6 +92,7 @@ class OTR_Rename(object):
         return newfilename
 
     def copy_and_sort(self):
+        #if not(os.path.isdir(os.path.join(self.path,self.show))):
         if not(os.path.isdir(os.path.join(self.path,self.show))):
            os.mkdir(os.path.join(self.path,self.show))
        
@@ -103,24 +104,24 @@ class OTR_Rename(object):
         log.write("input  " + self.file + "\n")
 
         newfilename = self.buildNewFilename()
-        chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss','Ö':'OE','Ä':'AE','Ü':'UE'} # rb Umlaute konvertieren
+        chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss','Ö':'OE','Ä':'AE','Ü':'UE', 'è':'e'} # rb Umlaute konvertieren
         if newfilename != False:
             for char in chars:  #rb
                 newfilename = newfilename.replace(char,chars[char])
             newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|')
             newpath = os.path.join(self.path,self.show + '/' + newfilename)
             logging.debug('Encoding ist %s' %  sys.stdin.encoding)
-            #log.write("newpath: " + newpath)  #rb zum testen
+            logging.debug("newpath: " + newpath)  #rb zum testen
             newpath = u''.join(newpath).encode('utf-8').strip()
-                                                			
+                                                            
             if not(os.path.isfile(newpath)):
-				if not(len(newfilename)==0):
-					move(os.path.join(self.path,self.file), newpath)
-					log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
-					log.write("output " + newpath + "\n\n")
-					logging.info(self.file + ' moved to: \n' + newpath +'\n')  
-				else:
-					logging.info('Filename hat 0 Bytes    ==> Skip file') 
+                if not(len(newfilename)==0):
+                    move(os.path.join(self.path,self.file), newpath)
+                    log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
+                    log.write("output " + newpath + "\n\n")
+                    logging.info(self.file + ' moved to: \n' + newpath +'\n')  
+                else:
+                    logging.info('Filename hat 0 Bytes    ==> Skip file') 
             else:
                 logging.info('File exists already in the target directory \n    ==> Skip file') 
         else:

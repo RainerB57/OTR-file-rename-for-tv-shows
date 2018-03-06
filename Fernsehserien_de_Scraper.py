@@ -135,9 +135,10 @@ class Fernsehserien_de_Scraper(object):
             logging.info("Using recent cache file...")        
             webpage = urlopen(cache)
         else:
-
-            if serieslinks.has_key(self.name.replace(' ','-')):
-                title = serieslinks[self.name.replace(' ','-')]
+            if serieslinks.has_key(self.name):
+                title = serieslinks[self.name]
+                #if serieslinks.has_key(self.name.replace(' ','-')):
+                #    title = serieslinks[self.name.replace(' ','-')]
             else:
                 title = self.name.replace(' ','-')
             logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1')
