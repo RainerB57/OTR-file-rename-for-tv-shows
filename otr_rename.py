@@ -3,7 +3,7 @@
 """
 OTR file rename for tv-shows
 Extract all information from the (decoded) otrkey file name (onlinetvrecorder.com)
-and use the website fernsehserien.de to rename the file with the episode and season info  
+and use the website fernsehserien.de to rename the file with the episode and season info
 
 @author: Jens
 """
@@ -27,159 +27,181 @@ logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 
 class OTR_Rename(object):
-    def __init__(self, filename):
-        path,file = os.path.split(filename)
-        self.file = file
-        self.path = path
-        self.parseFileInfo()
+	def __init__(self, filename):
+		path,file = os.path.split(filename)
+		self.file = file
+		self.path = path
+		self.parseFileInfo()
+		self.IsSerie = False
 
-    def parseFileInfo(self):
-        # Get Title, date and so on from filename
-        self.extension = os.path.splitext(self.file)[1]
-        m = re.search("(.*)_([0-9]{2}\.[0-9]{2}\.[0-9]{2})_([0-9]{2}\-[0-9]{2})_([A-Za-z0-9]+)", self.file)
-        title = m.group(1)
-        # Check for SxxExx in filename:
-        m2=re.search("(S[0-9]{2}E[0-9]{2})",title)
-        if type(m2) is not NoneType:
-            title = title.split('_'+m2.group(1))[0]
-            title = title.split('__')[0] # for US series SeriesName__EpisodeTitle (problems with shows like CSI__NY)
-            
-        self.show = title.replace("_",' ').strip()
-        self.epdate = m.group(2)
-        self.eptime = m.group(3)
-        self.sender = m.group(4)
-        if self.sender[:2] != 'us':
-            self.lang='de'
-        else:
-            self.lang='us'
-        logging.info(self.show + ' (' + self.lang + ') : ' + self.epdate + ' ' + self.eptime)
+	def parseFileInfo(self):
+		# Get Title, date and so on from filename
+		self.extension = os.path.splitext(self.file)[1]
+		m = re.search("(.*)_([0-9]{2}\.[0-9]{2}\.[0-9]{2})_([0-9]{2}\-[0-9]{2})_([A-Za-z0-9]+)", self.file)
+		title = m.group(1)
+		# Check for SxxExx in filename:
+		m2=re.search("(S[0-9]{2}E[0-9]{2})",title)
+		if type(m2) is not NoneType:
+			title = title.split('_'+m2.group(1))[0]
+		title = title.split('__')[0] # for US series SeriesName__EpisodeTitle (problems with shows like CSI__NY)
 
-    def queryEpisodeInfo(self):
-        self.scraper = Fernsehserien_de_Scraper(self.show)
+		self.show = title.replace("_",' ').strip()
+		self.epdate = m.group(2)
+		self.eptime = m.group(3)
+		self.sender = m.group(4)
+		if 'HQ' in self.file:
+			self.Format = 'HQ'
+		else:
+			self.Format = 'DivX'
+		if self.sender[:2] != 'us':
+			self.lang='de'
+		else:
+			self.lang='us'
+		logging.info(self.show + ' (' + self.lang + ') : ' + self.epdate + ' ' + self.eptime)
 
-        if self.lang == 'us':
-            (d,s,e,t) = self.scraper.getEpisodeGuide(lang='us')
+	def queryEpisodeInfo(self):
+		self.scraper = Fernsehserien_de_Scraper(self.show)
 
-        if self.lang == 'de':
-            (d,s,e,t,time_list) = self.scraper.getTimeTable(self.sender)
+		if self.lang == 'us':
+			(d,s,e,t) = self.scraper.getEpisodeGuide(lang='us')
 
-        # Find match in Date
-        if not(d[:]):
-            idx = False
-        else:
-            idx = self.searchDate(self.epdate, d)
-        # Found match:     
-        if str(idx).isdigit():
-            if self.lang == 'de':
-                idx = self.checkFollowingDateEntry(self.epdate, self.eptime, d, time_list, idx-1 if idx>0 else idx) #Search for closest eptime on the date
-            date, season, episode, title = d[idx], s[idx], e[idx], t[idx]
-            if len(season) == 1:
-                season = "0" + season  #rb Season 2-stellig
-        else: # No match
-            date, season, episode, title = None, None, None, None
-        
-        return date, season, episode, title
+		SZaehler = 1;
+		while SZaehler > 0:
+			if self.lang == 'de':
+				(d,s,e,t,time_list) = self.scraper.getTimeTable(self.sender, SZaehler)
 
-    def buildNewFilename(self):
-        # Get filename from the scraped webpage
-        date, season, episode, title = self.queryEpisodeInfo()
-        if None in (date, season, episode, title):
-            newfilename = ''  #rb False 
+			# Find match in Date
+			if not(d[:]):
+				idx = False
+				self.IsSerie = False
+				SZaehler = -2  # Suche erfolglos
+			else:
+				self.IsSerie = True
+				idx = self.searchDate(self.epdate, d)
 
-        else:
-            newfilename = self.show + ' '  + season + 'x' + episode + ' ' + title + self.extension  #rb
-            #newfilename = self.show + '.' + 'S' + season + 'E' + episode + '.' + title + self.extension
-        return newfilename
+			# Found match:
+			if str(idx).isdigit():
+				SZaehler = -1
+				if self.lang == 'de':
+					idx = self.checkFollowingDateEntry(self.epdate, self.eptime, d, time_list, idx-1 if idx>0 else idx) #Search for closest eptime on the date
+				date, season, episode, title = d[idx], s[idx], e[idx], t[idx]
+				if len(season) == 1:
+					season = "0" + season  #rb Season 2-stellig
+			else: # No match
+				date, season, episode, title = None, None, None, None
+				SZaehler += 1
+		return date, season, episode, title
 
-    def copy_and_sort(self):
-        #if not(os.path.isdir(os.path.join(self.path,self.show))):
-        if not(os.path.isdir(os.path.join(self.path,self.show))):
-           os.mkdir(os.path.join(self.path,self.show))
-       
-        log = open('log.txt','a')
-        lt = localtime()
-        jahr, monat, tag, stunde, minute = lt[0:5]
-        log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
-        #log.write(strftime("%Y-%m-%d %H:%I"))
-        log.write("input  " + self.file + "\n")
+	def buildNewFilename(self):
+		# Get filename from the scraped webpage
+		date, season, episode, title = self.queryEpisodeInfo()
+		if None in (date, season, episode, title):
+			#newfilename = ''  #rb False
+			newfilename = self.show \
+			+' [20' + self.epdate.replace('.','-') \
+			+' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb
 
-        newfilename = self.buildNewFilename()
-        chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss','Ö':'OE','Ä':'AE','Ü':'UE', 'è':'e'} # rb Umlaute konvertieren
-        if newfilename != False:
-            for char in chars:  #rb
-                newfilename = newfilename.replace(char,chars[char])
-            newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|')
-            newpath = os.path.join(self.path,self.show + '/' + newfilename)
-            logging.debug('Encoding ist %s' %  sys.stdin.encoding)
-            logging.debug("newpath: " + newpath)  #rb zum testen
-            newpath = u''.join(newpath).encode('utf-8').strip()
-                                                            
-            if not(os.path.isfile(newpath)):
-                if not(len(newfilename)==0):
-                    move(os.path.join(self.path,self.file), newpath)
-                    log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
-                    log.write("output " + newpath + "\n\n")
-                    logging.info(self.file + ' moved to: \n' + newpath +'\n')  
-                else:
-                    logging.info('Filename hat 0 Bytes    ==> Skip file') 
-            else:
-                logging.info('File exists already in the target directory \n    ==> Skip file') 
-        else:
-            logging.info('No match found \n   ==> skip file') 
-            newpath = os.path.join(self.path,self.file) 
-        
-        log.close()
+		else:
+			#newfilename = self.show + ' '  + season + 'x' + episode + ' ' + title + self.extension  #rb
+			newfilename = self.show + ' '  + season + 'x' + episode + ' ' \
+			+ title +' [20' + self.epdate.replace('.','-') \
+			+' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb
+			#newfilename = self.show + '.' + 'S' + season + 'E' + episode + '.' + title + self.extension
+		return newfilename
+
+	def copy_and_sort(self):
+		if not(os.path.isdir(os.path.join(self.path,self.show))):
+			#os.mkdir(os.path.join(self.path,self.show))
+			if self.IsSerie: 
+				os.mkdir(os.path.join(self.path,self.show))
+
+		log = open('log.txt','a')
+		lt = localtime()
+		jahr, monat, tag, stunde, minute = lt[0:5]
+		log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
+		log.write("input  " + self.file + "\n")
+
+		newfilename = self.buildNewFilename()
+		chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss','Ö':'OE','Ä':'AE','Ü':'UE', 'è':'e'} # rb Umlaute konvertieren
+		if newfilename != False:
+			for char in chars:  #rb
+				newfilename = newfilename.replace(char,chars[char])
+			newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|')
+			#newpath = os.path.join(self.path,self.show + '/' + newfilename)
+			if self.IsSerie: 
+				newpath = os.path.join(self.path,self.show + '/' + newfilename)
+			else:
+				newpath = newfilename
+			logging.debug('Encoding ist %s' %  sys.stdin.encoding)
+			logging.debug("newpath: " + newpath)  #rb zum testen
+			newpath = u''.join(newpath).encode('utf-8').strip()
+
+			if not(os.path.isfile(newpath)):
+				if not(len(newfilename)==0):
+					move(os.path.join(self.path,self.file), newpath)
+					log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
+					log.write("output " + newpath + "\n\n")
+					logging.info(self.file + ' moved to: \n' + newpath +'\n')
+				else:
+					logging.info('Filename hat 0 Bytes	==> Skip file')
+			else:
+				logging.info('File exists already in the target directory \n	==> Skip file')
+		else:
+			logging.info('No match found \n   ==> skip file')
+			newpath = os.path.join(self.path,self.file)
+
+		log.close()
 
 
-    @staticmethod
-    def searchDate(date, date_list): 
-        date=datetime.strptime(date.strip(),"%y.%m.%d")
-        for index, item in enumerate(date_list):
-            item = item.strip() #remove potential white spaces
-            if item != u'\xa0' and item != '':
-                actualdate = datetime.strptime(item,"%d.%m.%Y")
-                if actualdate.date() == date.date():
-                    return index
+	@staticmethod
+	def searchDate(date, date_list):
+		date=datetime.strptime(date.strip(),"%y.%m.%d")
+		for index, item in enumerate(date_list):
+			item = item.strip() #remove potential white spaces
+			if item != u'\xa0' and item != '':
+				actualdate = datetime.strptime(item,"%d.%m.%Y")
+			if actualdate.date() == date.date():
+				return index
 
-    @staticmethod
-    def checkFollowingDateEntry(date,stime,date_list,time_list,idx):
-        tc = time.strptime(date+' '+stime,"%y.%m.%d %H-%M")  #Time from filename 
-        
-        actual=time.strptime(date_list[idx]+' '+time_list[idx],"%d.%m.%Y %H:%M")
-        
-        if idx <= len(date_list)-2:
-            after=time.strptime(date_list[idx+1]+' '+time_list[idx+1],"%d.%m.%Y %H:%M")
-        else:
-            return idx
-        
-        trynext = True
-        while trynext:
+	@staticmethod
+	def checkFollowingDateEntry(date,stime,date_list,time_list,idx):
+		tc = time.strptime(date+' '+stime,"%y.%m.%d %H-%M")  #Time from filename
 
-            diffactual= abs(time.mktime(actual)-time.mktime(tc))
-            diffnext= abs(time.mktime(after)-time.mktime(tc))
-            
-            if diffactual > diffnext and idx < len(date_list)-2:
-                idx=idx+1
-                actual = time.strptime(date_list[idx]+' '+time_list[idx],"%d.%m.%Y %H:%M")
-                after = time.strptime(date_list[idx+1]+' '+time_list[idx+1],"%d.%m.%Y %H:%M")  
-            elif diffactual > diffnext and idx == len(date_list)-2:
-                idx=idx+1
-                trynext = False
-            else:
-                trynext = False
-                
-        return idx
+		actual=time.strptime(date_list[idx]+' '+time_list[idx],"%d.%m.%Y %H:%M")
+
+		if idx <= len(date_list)-2:
+			after=time.strptime(date_list[idx+1]+' '+time_list[idx+1],"%d.%m.%Y %H:%M")
+		else:
+			return idx
+
+		trynext = True
+		while trynext:
+
+			diffactual= abs(time.mktime(actual)-time.mktime(tc))
+			diffnext= abs(time.mktime(after)-time.mktime(tc))
+
+			if diffactual > diffnext and idx < len(date_list)-2:
+				idx=idx+1
+				actual = time.strptime(date_list[idx]+' '+time_list[idx],"%d.%m.%Y %H:%M")
+				after = time.strptime(date_list[idx+1]+' '+time_list[idx+1],"%d.%m.%Y %H:%M")
+			elif diffactual > diffnext and idx == len(date_list)-2:
+				idx=idx+1
+				trynext = False
+			else:
+				trynext = False
+
+		return idx
 
 
 if __name__ == '__main__':
-    import sys
-    if len(sys.argv) == 2:
-        filename = sys.argv[1]
-        otrfile = OTR_Rename(filename)
-        filename_new = otrfile.buildNewFilename()
-        if filename_new != False:
-            print filename_new
-        else:
-            print 'No episode data found.'
-    else:
-        print 'Usage: ' + sys.argv[0] + ' filename'
+	import sys
+	if len(sys.argv) == 2:
+		filename = sys.argv[1]
+		otrfile = OTR_Rename(filename)
+		filename_new = otrfile.buildNewFilename()
+		if filename_new != False:
+			print filename_new
+		else:
+			print 'No episode data found.'
+	else:
+		print 'Usage: ' + sys.argv[0] + ' filename'
