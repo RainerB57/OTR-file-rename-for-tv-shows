@@ -25,15 +25,15 @@ from Fernsehserien_de_Scraper import Fernsehserien_de_Scraper
 # create logger
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
-
+global IsSerie  # global, weil verschidene Funktionen von OTR_Rename es aufrufen und ggf. verändern 
 class OTR_Rename(object):
 	def __init__(self, filename):
 		path,file = os.path.split(filename)
 		self.file = file
 		self.path = path
 		self.parseFileInfo()
-		self.IsSerie = False
 
+    
 	def parseFileInfo(self):
 		# Get Title, date and so on from filename
 		self.extension = os.path.splitext(self.file)[1]
@@ -60,6 +60,7 @@ class OTR_Rename(object):
 		logging.info(self.show + ' (' + self.lang + ') : ' + self.epdate + ' ' + self.eptime)
 
 	def queryEpisodeInfo(self):
+		global IsSerie
 		self.scraper = Fernsehserien_de_Scraper(self.show)
 
 		if self.lang == 'us':
@@ -73,10 +74,10 @@ class OTR_Rename(object):
 			# Find match in Date
 			if not(d[:]):
 				idx = False
-				self.IsSerie = False
+				IsSerie = False
 				SZaehler = -2  # Suche erfolglos
 			else:
-				self.IsSerie = True
+				IsSerie = True
 				idx = self.searchDate(self.epdate, d)
 
 			# Found match:
@@ -110,11 +111,7 @@ class OTR_Rename(object):
 		return newfilename
 
 	def copy_and_sort(self):
-		if not(os.path.isdir(os.path.join(self.path,self.show))):
-			#os.mkdir(os.path.join(self.path,self.show))
-			if self.IsSerie: 
-				os.mkdir(os.path.join(self.path,self.show))
-
+		global IsSerie
 		log = open('log.txt','a')
 		lt = localtime()
 		jahr, monat, tag, stunde, minute = lt[0:5]
@@ -122,16 +119,18 @@ class OTR_Rename(object):
 		log.write("input  " + self.file + "\n")
 
 		newfilename = self.buildNewFilename()
+		if not(os.path.isdir(os.path.join(self.path,self.show))):
+			if IsSerie: 
+				os.mkdir(os.path.join(self.path,self.show))
 		chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss','Ö':'OE','Ä':'AE','Ü':'UE', 'è':'e'} # rb Umlaute konvertieren
 		if newfilename != False:
 			for char in chars:  #rb
 				newfilename = newfilename.replace(char,chars[char])
 			newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|')
-			#newpath = os.path.join(self.path,self.show + '/' + newfilename)
-			if self.IsSerie: 
+			if IsSerie: 
 				newpath = os.path.join(self.path,self.show + '/' + newfilename)
 			else:
-				newpath = newfilename
+				newpath = 'NichtSerien/' + newfilename
 			logging.debug('Encoding ist %s' %  sys.stdin.encoding)
 			logging.debug("newpath: " + newpath)  #rb zum testen
 			newpath = u''.join(newpath).encode('utf-8').strip()
@@ -191,7 +190,6 @@ class OTR_Rename(object):
 				trynext = False
 
 		return idx
-
 
 if __name__ == '__main__':
 	import sys

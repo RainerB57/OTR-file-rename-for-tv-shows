@@ -45,12 +45,13 @@ class Fernsehserien_de_Scraper(object):
 				title = serieslinks[self.name]
 			else:
 				title = self.name.replace(' ','-')
-			try:
-				webpage = None
-				webpage = urlopen('https://www.fernsehserien.de/'+title+'/episodenguide').read()
-			finally:
-				if webpage:
-					webpage.close()  #rb test
+#			try:
+#				webpage = None
+#				webpage = urlopen('https://www.fernsehserien.de/'+title+'/episodenguide').read()
+			webpage = urlopen('https://www.fernsehserien.de/'+title+'/episodenguide').read()
+#			finally:
+#				if webpage:
+#					webpage.close()  #rb test
 			if not(os.path.isdir(Fernsehserien_de_Scraper.CACHE_FOLDER)):
 				os.mkdir(Fernsehserien_de_Scraper.CACHE_FOLDER)
 
@@ -137,7 +138,8 @@ class Fernsehserien_de_Scraper(object):
 
 		#cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_ttlist.dat' #rb auskommentiert
 		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(SZaehler) + '_ttlist.dat' #rb
-		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:
+		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:    #12h
+		   # bessere Bedingung: Datum des Films im Dateinamen ist neuer als die Cachedatei 
 			logging.info("Using recent cache file...")
 			webpage = urlopen(cache)
 		else:
@@ -159,9 +161,11 @@ class Fernsehserien_de_Scraper(object):
 			f.close()
 			logging.info('Website scraping => done')
 
-		#soup = BeautifulSoup(fernsehserien_testdata.gethtmlo(), "html.parser")
 		soup = BeautifulSoup(webpage, "html.parser")
 		tddata = soup.select("tr")
+		#log1 = open('log1.txt','w')
+		#log1.write(soup)
+		#log1.close()
 
 		epdate, eptime, season, episode, title = [],[],[],[],[]
 		for index, item in enumerate(tddata):
@@ -172,6 +176,17 @@ class Fernsehserien_de_Scraper(object):
 				season.append(m.group(4))
 				episode.append(m.group(5))
 				title.append(m.group(6))
+		if len(title) == 0:
+			for index, item in enumerate(tddata,0):
+				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,2}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))		
+				if type(m) is not NoneType:
+					epdate.append(m.group(1))
+					eptime.append(m.group(2))
+					season.append('1')
+					episode.append(m.group(4))
+                    # leider noch in Titel fehlerhaft: Kleinschreibung und Bindestriche
+					title.append(m.group(5).replace("-", " "))  # wegen ungewöhnlichen Bindestrichen
+
 		return (epdate, season, episode, title, eptime)
 
 
