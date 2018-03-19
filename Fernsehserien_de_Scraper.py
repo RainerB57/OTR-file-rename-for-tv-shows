@@ -7,6 +7,7 @@ Extract all date, time, season and episode information for a specific TV-Show fr
 @author: Jens
 """
 
+import datetime
 from bs4 import BeautifulSoup
 from urllib import urlopen
 from math import fmod
@@ -28,9 +29,10 @@ class Fernsehserien_de_Scraper(object):
 
 	CACHE_FOLDER = '.cache'
 
-	def __init__(self, show):
+	#def __init__(self, show):
+	def __init__(self, show, SendeZeit):  #rb
 		self.name = show #e.g. 'Die Simpsons'
-
+		self.SZeit = SendeZeit  #rb
 	######  DOWNLOADING WEBPAGE : Fernsehserien - EpisodeGuide ########
 	def downloadWebpage(self):
 		logging.info('Trying to get website information...please wait...')
@@ -45,13 +47,7 @@ class Fernsehserien_de_Scraper(object):
 				title = serieslinks[self.name]
 			else:
 				title = self.name.replace(' ','-')
-#			try:
-#				webpage = None
-#				webpage = urlopen('https://www.fernsehserien.de/'+title+'/episodenguide').read()
 			webpage = urlopen('https://www.fernsehserien.de/'+title+'/episodenguide').read()
-#			finally:
-#				if webpage:
-#					webpage.close()  #rb test
 			if not(os.path.isdir(Fernsehserien_de_Scraper.CACHE_FOLDER)):
 				os.mkdir(Fernsehserien_de_Scraper.CACHE_FOLDER)
 
@@ -137,9 +133,15 @@ class Fernsehserien_de_Scraper(object):
 			return 0
 
 		#cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_ttlist.dat' #rb auskommentiert
-		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(SZaehler) + '_ttlist.dat' #rb
-		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:    #12h
-		   # bessere Bedingung: Datum des Films im Dateinamen ist neuer als die Cachedatei 
+		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(SZaehler) + '_' + senderlink +'_ttlist.dat' #rb
+#		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:    #12h
+#		   # bessere Bedingung: Datum des Films im Dateinamen ist älter als die Cachedatei 
+#			logging.info("Using recent cache file...")
+#			webpage = urlopen(cache)
+		if os.path.isfile(cache):
+			self._test = datetime.datetime.fromtimestamp(os.path.getmtime(cache)).strftime("%Y.%m.%d%H-%M")[2:15] #rb
+		if os.path.isfile(cache) and (self._test > self.SZeit):		
+		    # bessere Bedingung: Datum der Cachedatei ist neuer als die Sendezeit des Films im Dateinamen 
 			logging.info("Using recent cache file...")
 			webpage = urlopen(cache)
 		else:
@@ -163,9 +165,6 @@ class Fernsehserien_de_Scraper(object):
 
 		soup = BeautifulSoup(webpage, "html.parser")
 		tddata = soup.select("tr")
-		#log1 = open('log1.txt','w')
-		#log1.write(soup)
-		#log1.close()
 
 		epdate, eptime, season, episode, title = [],[],[],[],[]
 		for index, item in enumerate(tddata):

@@ -25,7 +25,9 @@ from Fernsehserien_de_Scraper import Fernsehserien_de_Scraper
 # create logger
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
-global IsSerie  # global, weil verschidene Funktionen von OTR_Rename es aufrufen und ggf. verändern 
+global IsSerie  # global, weil verschiedene Funktionen von OTR_Rename es aufrufen und ggf. verändern 
+#global SendeZeit
+
 class OTR_Rename(object):
 	def __init__(self, filename):
 		path,file = os.path.split(filename)
@@ -48,6 +50,8 @@ class OTR_Rename(object):
 		self.show = title.replace("_",' ').strip()
 		self.epdate = m.group(2)
 		self.eptime = m.group(3)
+		#global SendeZeit
+		self.SendeZeit = self.epdate + self.eptime
 		self.sender = m.group(4)
 		if 'HQ' in self.file:
 			self.Format = 'HQ'
@@ -61,7 +65,7 @@ class OTR_Rename(object):
 
 	def queryEpisodeInfo(self):
 		global IsSerie
-		self.scraper = Fernsehserien_de_Scraper(self.show)
+		self.scraper = Fernsehserien_de_Scraper(self.show, self.SendeZeit)
 
 		if self.lang == 'us':
 			(d,s,e,t) = self.scraper.getEpisodeGuide(lang='us')
@@ -90,17 +94,32 @@ class OTR_Rename(object):
 					season = "0" + season  #rb Season 2-stellig
 			else: # No match
 				date, season, episode, title = None, None, None, None
-				SZaehler += 1
+				#SZaehler += 1
+				if  IsSerie:
+					self._d= d[len(d)-1]
+					self._t = time_list[len(time_list)-1]
+					self.test = self._d[8:10] + self._d[2:6] + self._d[0:2] + self._t[0:2] + '-' + self._t[3:5]
+					if (self.SendeZeit > self.test):     #unnötig, in älteren Webseiteneinträgen zu suchen
+						SZaehler = -1
+					else:
+						SZaehler += 1
 		return date, season, episode, title
 
 	def buildNewFilename(self):
 		# Get filename from the scraped webpage
 		date, season, episode, title = self.queryEpisodeInfo()
-		if None in (date, season, episode, title):
+		if  None in (date, season, episode, title):
 			#newfilename = ''  #rb False
-			newfilename = self.show \
-			+' [20' + self.epdate.replace('.','-') \
-			+' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb
+			if  IsSerie:
+				newfilename = ''  #rb 
+				logging.info('Falsche Angaben im Dateinamen?')
+			else:
+				 newfilename = self.show \
+				 +' [20' + self.epdate.replace('.','-') \
+				 +' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb
+#			newfilename = self.show \
+#			+' [20' + self.epdate.replace('.','-') \
+#			+' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb
 
 		else:
 			#newfilename = self.show + ' '  + season + 'x' + episode + ' ' + title + self.extension  #rb
