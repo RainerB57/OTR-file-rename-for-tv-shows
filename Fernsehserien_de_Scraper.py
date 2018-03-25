@@ -20,6 +20,7 @@ import time
 import codecs
 import logging
 import sys
+import conf
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
@@ -123,7 +124,8 @@ class Fernsehserien_de_Scraper(object):
 
 
 	######  DOWNLOADING WEBPAGE : Fernsehserien - TimeTable ########
-	def getTimeTable(self, sender, SZaehler):
+#	def getTimeTable(self, sender, SZaehler):
+	def getTimeTable(self, sender):
 		logging.info('Trying to get timetable information...please wait...')
 
 		if senderlinks.has_key(sender):
@@ -133,7 +135,7 @@ class Fernsehserien_de_Scraper(object):
 			return 0
 
 		#cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_ttlist.dat' #rb auskommentiert
-		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(SZaehler) + '_' + senderlink +'_ttlist.dat' #rb
+		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(conf.SZaehler) + '_' + senderlink +'_ttlist.dat' #rb
 #		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:    #12h
 #		   # bessere Bedingung: Datum des Films im Dateinamen ist älter als die Cachedatei 
 #			logging.info("Using recent cache file...")
@@ -152,9 +154,9 @@ class Fernsehserien_de_Scraper(object):
 			else:
 				title = self.name.replace(' ','-')
 			#logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1') #rb auskommentiert
-			logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-' + str(SZaehler))
+			logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-' + str(conf.SZaehler))
 			#webpage = urlopen('https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1').read()
-			webpage = urlopen('https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-' +str(SZaehler)).read() #rb
+			webpage = urlopen('https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-' +str(conf.SZaehler)).read() #rb
 			if not(os.path.isdir(Fernsehserien_de_Scraper.CACHE_FOLDER)):
 				os.mkdir(Fernsehserien_de_Scraper.CACHE_FOLDER)
 

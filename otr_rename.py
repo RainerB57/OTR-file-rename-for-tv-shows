@@ -18,15 +18,60 @@ import codecs
 from types import *
 import logging
 import sys
-#from string import maketrans   # Required to call maketrans function. # rb
+import conf
 
 from Fernsehserien_de_Scraper import Fernsehserien_de_Scraper
+# nicht   import Fernsehserien_de_Scraper wegen import datetime in Fernsehserien_de_Scraper
 
 # create logger
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 global IsSerie  # global, weil verschiedene Funktionen von OTR_Rename es aufrufen und ggf. verändern 
-#global SendeZeit
+
+
+class OTR_RenameBack(object):
+	def __init__(self, filename):
+		self.filename0 = filename
+		path,file = os.path.split(filename)
+		self.file = file
+		self.path = path
+#		self.LineNrVonOldFile = 0
+
+	def getOriginalFilename(self, filename):
+		with open('log.txt') as f:
+			self.lines = f.read().splitlines()
+		Zeile1 = self.lines[0]
+		i = 1
+		OrigFileName = ''
+		while len(self.lines) > i-1:
+			Zeile2 = self.lines[i]
+			if ('output ') in Zeile2 and (self.file in Zeile2):
+				OrigFileName = Zeile1[26:len(Zeile1)]
+				conf.LineNrVonOldFile= i
+				break
+			else:
+				Zeile1 = Zeile2
+			i += 1
+
+		return OrigFileName
+
+	def RenameToOld(self,a):
+		move (a, self.filename0)
+		self.lines = []
+		with open('log.txt') as f:
+			self.lines = f.read().splitlines()
+		f.close()
+		f = open('log.txt', 'w')
+		i = 0
+		while i < conf.LineNrVonOldFile-1:
+			f.write(self.lines[i] + '\n')
+			i+= 1
+		i = conf.LineNrVonOldFile+2
+		while i < len(self.lines):
+			f.write(self.lines[i] + '\n')
+			i += 1
+		f.close()
+
 
 class OTR_Rename(object):
 	def __init__(self, filename):
@@ -50,7 +95,6 @@ class OTR_Rename(object):
 		self.show = title.replace("_",' ').strip()
 		self.epdate = m.group(2)
 		self.eptime = m.group(3)
-		#global SendeZeit
 		self.SendeZeit = self.epdate + self.eptime
 		self.sender = m.group(4)
 		if 'HQ' in self.file:
@@ -69,24 +113,23 @@ class OTR_Rename(object):
 
 		if self.lang == 'us':
 			(d,s,e,t) = self.scraper.getEpisodeGuide(lang='us')
-
-		SZaehler = 1;
-		while SZaehler > 0:
+		conf.SZaehler = 1;
+		while conf.SZaehler > 0:
 			if self.lang == 'de':
-				(d,s,e,t,time_list) = self.scraper.getTimeTable(self.sender, SZaehler)
+				(d,s,e,t,time_list) = self.scraper.getTimeTable(self.sender)
 
 			# Find match in Date
 			if not(d[:]):
 				idx = False
 				IsSerie = False
-				SZaehler = -2  # Suche erfolglos
+				conf.SZaehler = -2  # Suche erfolglos
 			else:
 				IsSerie = True
 				idx = self.searchDate(self.epdate, d)
 
 			# Found match:
 			if str(idx).isdigit():
-				SZaehler = -1
+				conf.SZaehler = -1
 				if self.lang == 'de':
 					idx = self.checkFollowingDateEntry(self.epdate, self.eptime, d, time_list, idx-1 if idx>0 else idx) #Search for closest eptime on the date
 				date, season, episode, title = d[idx], s[idx], e[idx], t[idx]
@@ -100,16 +143,15 @@ class OTR_Rename(object):
 					self._t = time_list[len(time_list)-1]
 					self.test = self._d[8:10] + self._d[2:6] + self._d[0:2] + self._t[0:2] + '-' + self._t[3:5]
 					if (self.SendeZeit > self.test):     #unnötig, in älteren Webseiteneinträgen zu suchen
-						SZaehler = -1
+						conf.SZaehler = -1
 					else:
-						SZaehler += 1
+						conf.SZaehler += 1
 		return date, season, episode, title
 
 	def buildNewFilename(self):
 		# Get filename from the scraped webpage
 		date, season, episode, title = self.queryEpisodeInfo()
-		if  None in (date, season, episode, title):
-			#newfilename = ''  #rb False
+		if None in (date, season, episode, title):
 			if  IsSerie:
 				newfilename = ''  #rb 
 				logging.info('Falsche Angaben im Dateinamen?')
@@ -134,18 +176,22 @@ class OTR_Rename(object):
 		log = open('log.txt','a')
 		lt = localtime()
 		jahr, monat, tag, stunde, minute = lt[0:5]
-		log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
+		log.write(str(jahr)+'-'+ str(monat).zfill(2) +'-'+ str(tag).zfill(2) +' '+ str(stunde).zfill(2) +':'+ str(minute).zfill(2) +' : ')
 		log.write("input  " + self.file + "\n")
 
 		newfilename = self.buildNewFilename()
 		if not(os.path.isdir(os.path.join(self.path,self.show))):
 			if IsSerie: 
 				os.mkdir(os.path.join(self.path,self.show))
-		chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss','Ö':'OE','Ä':'AE','Ü':'UE', 'è':'e'} # rb Umlaute konvertieren
+		chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss', '`':"'", '´':"'", \
+		'Ö':'OE','Ä':'AE','Ü':'UE',	'à':'a', 'ê':'e', 'é':'e', 'è':'e', \
+		'À':'A', 'Ê':'E', 'É':'E', 'È':'E'} # rb Umlaute und Vokale mit Akzenten konvertieren
 		if newfilename != False:
+			#newfilename = "´`*~'#,;-" rb test
 			for char in chars:  #rb
 				newfilename = newfilename.replace(char,chars[char])
-			newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|')
+#			newfilename = "".join(i for i in newfilename if i not in r'\/:*?"<>|´`')
+			newfilename = "".join(i for i in newfilename if (ord(i) < 128) and (i not in r'\/:*?"<>|´`'))
 			if IsSerie: 
 				newpath = os.path.join(self.path,self.show + '/' + newfilename)
 			else:
@@ -157,7 +203,7 @@ class OTR_Rename(object):
 			if not(os.path.isfile(newpath)):
 				if not(len(newfilename)==0):
 					move(os.path.join(self.path,self.file), newpath)
-					log.write(str(jahr)+'-'+ str(monat) +'-'+ str(tag) +' '+ str(stunde) +':'+ str(minute) +' : ')
+					log.write(str(jahr)+'-'+ str(monat).zfill(2) +'-'+ str(tag).zfill(2) +' '+ str(stunde).zfill(2) +':'+ str(minute).zfill(2) +' : ')
 					log.write("output " + newpath + "\n\n")
 					logging.info(self.file + ' moved to: \n' + newpath +'\n')
 				else:
