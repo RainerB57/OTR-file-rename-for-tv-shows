@@ -157,6 +157,7 @@ class Fernsehserien_de_Scraper(object):
 			logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-' + str(conf.SZaehler))
 			#webpage = urlopen('https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1').read()
 			webpage = urlopen('https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-' +str(conf.SZaehler)).read() #rb
+			print(webpage)       # rb test
 			if not(os.path.isdir(Fernsehserien_de_Scraper.CACHE_FOLDER)):
 				os.mkdir(Fernsehserien_de_Scraper.CACHE_FOLDER)
 
@@ -165,6 +166,7 @@ class Fernsehserien_de_Scraper(object):
 			f.close()
 			logging.info('Website scraping => done')
 
+		#conf.LetzteSeite = ("erfasst" in webpage)
 		soup = BeautifulSoup(webpage, "html.parser")
 		tddata = soup.select("tr")
 

@@ -126,9 +126,7 @@ class OTR_Rename(object):
 			else:
 				IsSerie = True
 				idx = self.searchDate(self.epdate, d)
-
-			# Found match:
-			if str(idx).isdigit():
+			if str(idx).isdigit():  # Found match:
 				conf.SZaehler = -1
 				if self.lang == 'de':
 					idx = self.checkFollowingDateEntry(self.epdate, self.eptime, d, time_list, idx-1 if idx>0 else idx) #Search for closest eptime on the date
@@ -138,14 +136,17 @@ class OTR_Rename(object):
 			else: # No match
 				date, season, episode, title = None, None, None, None
 				#SZaehler += 1
-				if  IsSerie:
-					self._d= d[len(d)-1]
-					self._t = time_list[len(time_list)-1]
-					self.test = self._d[8:10] + self._d[2:6] + self._d[0:2] + self._t[0:2] + '-' + self._t[3:5]
-					if (self.SendeZeit > self.test):     #unnötig, in älteren Webseiteneinträgen zu suchen
-						conf.SZaehler = -1
-					else:
-						conf.SZaehler += 1
+				if conf.LetzteSeite:
+					conf.SZaehler = -1
+				else:
+					if  IsSerie: 
+						self._d= d[len(d)-1]
+						self._t = time_list[len(time_list)-1]
+						self.test = self._d[8:10] + self._d[2:6] + self._d[0:2] + self._t[0:2] + '-' + self._t[3:5]
+						if (self.SendeZeit > self.test):     #unnötig, in älteren Webseiteneinträgen zu suchen
+							conf.SZaehler = -1
+						else:
+							conf.SZaehler += 1
 		return date, season, episode, title
 
 	def buildNewFilename(self):
@@ -159,12 +160,7 @@ class OTR_Rename(object):
 				 newfilename = self.show \
 				 +' [20' + self.epdate.replace('.','-') \
 				 +' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb
-#			newfilename = self.show \
-#			+' [20' + self.epdate.replace('.','-') \
-#			+' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb
-
 		else:
-			#newfilename = self.show + ' '  + season + 'x' + episode + ' ' + title + self.extension  #rb
 			newfilename = self.show + ' '  + season + 'x' + episode + ' ' \
 			+ title +' [20' + self.epdate.replace('.','-') \
 			+' ' + self.eptime.replace(':','-') + '] ' + self.sender + ' ' + self.Format +self.extension  #rb

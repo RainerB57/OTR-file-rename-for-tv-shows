@@ -13,3 +13,4 @@
 
 SZaehler = 0  # globale Variable
 LineNrVonOldFile = 0
+LetzteSeite = False
