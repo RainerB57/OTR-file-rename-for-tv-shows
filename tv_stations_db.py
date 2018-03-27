@@ -45,6 +45,7 @@ senderlinks = {
 'sport1' : 'sport1',
 'srtl' : 'superrtl', 
 'stv' :'servustv-deutschland',
+'stva': 'servustv',       # Österreich manuell umbenannt
 'sw3' : 'swr-fernsehen',
 'tagesschau24' : 'tagesschau24',
 'tele5' : 'tele5', 
