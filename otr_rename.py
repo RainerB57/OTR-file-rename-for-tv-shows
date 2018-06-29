@@ -1,5 +1,6 @@
-#/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/python
+#encoding: utf-8
+
 """
 OTR file rename for tv-shows
 Extract all information from the (decoded) otrkey file name (onlinetvrecorder.com)
@@ -90,13 +91,14 @@ class OTR_Rename(object):
 		m2=re.search("(S[0-9]{2}E[0-9]{2})",title)
 		if type(m2) is not NoneType:
 			title = title.split('_'+m2.group(1))[0]
-		title = title.split('__')[0] # for US series SeriesName__EpisodeTitle (problems with shows like CSI__NY)
-
 		self.show = title.replace("_",' ').strip()
 		self.epdate = m.group(2)
 		self.eptime = m.group(3)
 		self.SendeZeit = self.epdate + self.eptime
 		self.sender = m.group(4)
+		if 'us' in self.sender: 
+			title = title.split('__')[0] # for US series SeriesName__EpisodeTitle (problems with shows like CSI__NY)
+
 		if 'HQ' in self.file:
 			self.Format = 'HQ'
 		else:
@@ -180,7 +182,7 @@ class OTR_Rename(object):
 			if IsSerie: 
 				os.mkdir(os.path.join(self.path,self.show))
 		chars = {'ö':'oe','ä':'ae','ü':'ue','ß':'ss', '`':"'", '´':"'", \
-		'Ö':'OE','Ä':'AE','Ü':'UE',	'à':'a', 'ê':'e', 'é':'e', 'è':'e', \
+		'Ö':'Oe','Ä':'Ae','Ü':'Ue',	'à':'a', 'ê':'e', 'é':'e', 'è':'e', \
 		'À':'A', 'Ê':'E', 'É':'E', 'È':'E'} # rb Umlaute und Vokale mit Akzenten konvertieren
 		if newfilename != False:
 			#newfilename = "´`*~'#,;-" rb test
@@ -191,7 +193,9 @@ class OTR_Rename(object):
 			if IsSerie: 
 				newpath = os.path.join(self.path,self.show + '/' + newfilename)
 			else:
-				newpath = 'NichtSerien/' + newfilename
+				newpath = '_NichtSerien/' + newfilename
+				if not(os.path.isdir(os.path.join(self.path,'_NichtSerien'))): 
+					os.mkdir(os.path.join(self.path,'_NichtSerien'))                
 			logging.debug('Encoding ist %s' %  sys.stdin.encoding)
 			logging.debug("newpath: " + newpath)  #rb zum testen
 			newpath = u''.join(newpath).encode('utf-8').strip()

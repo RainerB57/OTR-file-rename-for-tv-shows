@@ -37,7 +37,7 @@ class Fernsehserien_de_Scraper(object):
 	######  DOWNLOADING WEBPAGE : Fernsehserien - EpisodeGuide ########
 	def downloadWebpage(self):
 		logging.info('Trying to get website information...please wait...')
-		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_' + 'eplist.dat'
+		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_' + 'eplist.html'
 		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:
 			logging.info('Use local file...')
 			webpage = urlopen(cache)
@@ -134,10 +134,9 @@ class Fernsehserien_de_Scraper(object):
 			logging.warning('Link zu Sender ' + sender +' nicht gefunden')
 			return 0
 
-		#cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_ttlist.dat' #rb auskommentiert
-		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(conf.SZaehler) + '_' + senderlink +'_ttlist.dat' #rb
+		#cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_ttlist.html' #rb auskommentiert
+		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(conf.SZaehler) + '_' + senderlink +'_ttlist.html' #rb
 #		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:    #12h
-#		   # bessere Bedingung: Datum des Films im Dateinamen ist älter als die Cachedatei 
 #			logging.info("Using recent cache file...")
 #			webpage = urlopen(cache)
 		if os.path.isfile(cache):
@@ -181,7 +180,8 @@ class Fernsehserien_de_Scraper(object):
 				title.append(m.group(6))
 		if len(title) == 0:
 			for index, item in enumerate(tddata,0):
-				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,2}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))		
+#				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,2}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))
+				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,3}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))  # Episode kann auch 3-stellig sein
 				if type(m) is not NoneType:
 					epdate.append(m.group(1))
 					eptime.append(m.group(2))

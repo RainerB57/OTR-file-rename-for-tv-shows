@@ -1,3 +1,6 @@
+#!/usr/bin/python
+#encoding: utf-8
+
 from otr_rename_gui_window import Ui_Form
 import sys
 from PyQt4 import QtCore, QtGui
