@@ -111,6 +111,7 @@ class OTR_Rename(object):
 
 	def queryEpisodeInfo(self):
 		global IsSerie
+		self.show=self.show.replace("  ", " ")  #rb 2019-04-30 wegen __ in Show
 		self.scraper = Fernsehserien_de_Scraper(self.show, self.SendeZeit)
 
 		if self.lang == 'us':

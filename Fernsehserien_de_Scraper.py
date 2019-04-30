@@ -37,6 +37,11 @@ class Fernsehserien_de_Scraper(object):
 	######  DOWNLOADING WEBPAGE : Fernsehserien - EpisodeGuide ########
 	def downloadWebpage(self):
 		logging.info('Trying to get website information...please wait...')
+		logging.info('Test!!')
+		self.index0 = self.name.find (' USA 20') #rb 2018-07-10s  spart Einträge in tv_shows_db
+		if self.index0 > -1:
+			self.name = self.name[0: self.index0] + self.name[self.index0+9:]
+			logging.info(self.name)
 		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_' + 'eplist.html'
 		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:
 			logging.info('Use local file...')
@@ -126,7 +131,7 @@ class Fernsehserien_de_Scraper(object):
 	######  DOWNLOADING WEBPAGE : Fernsehserien - TimeTable ########
 #	def getTimeTable(self, sender, SZaehler):
 	def getTimeTable(self, sender):
-		logging.info('Trying to get timetable information...please wait...')
+		logging.info('Trying to get timetable information...please wait...') 
 
 		if senderlinks.has_key(sender):
 			senderlink = senderlinks[sender]
@@ -134,25 +139,33 @@ class Fernsehserien_de_Scraper(object):
 			logging.warning('Link zu Sender ' + sender +' nicht gefunden')
 			return 0
 
+		self.index0 = self.name.find (' USA 20') #rb 2018-07-10s  spart Einträge in tv_shows_db
+		if self.index0 > -1:
+			self.name = self.name[0: self.index0] + self.name[self.index0+9:]
+		if serieslinks.has_key(self.name):
+			title = serieslinks[self.name]
+		else:
+			title = self.name.replace(' ','-')
 		#cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + '_ttlist.html' #rb auskommentiert
-		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(conf.SZaehler) + '_' + senderlink +'_ttlist.html' #rb
+		#cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + self.name + str(conf.SZaehler) + '_' + senderlink +'_ttlist.html' #rb
+		cache = Fernsehserien_de_Scraper.CACHE_FOLDER + '/' + title + str(conf.SZaehler) + '_' + senderlink +'_ttlist.html' #rb
 #		if os.path.isfile(cache) and (time.time() - os.path.getmtime(cache)) < 43200:    #12h
 #			logging.info("Using recent cache file...")
 #			webpage = urlopen(cache)
 		if os.path.isfile(cache):
 			self._test = datetime.datetime.fromtimestamp(os.path.getmtime(cache)).strftime("%Y.%m.%d%H-%M")[2:15] #rb
-		if os.path.isfile(cache) and (self._test > self.SZeit):		
-		    # bessere Bedingung: Datum der Cachedatei ist neuer als die Sendezeit des Films im Dateinamen 
-			logging.info("Using recent cache file...")
+		if os.path.isfile(cache) and (self._test > self.SZeit):
+			# bessere Bedingung: Datum der Cachedatei ist neuer als die Sendezeit des Films im Dateinamen 
+			logging.info("Using recent cache file...")	
 			#webpage = urlopen(cache)
 			webpage = urlopen(cache).read()   #rb
 		else:
-			if serieslinks.has_key(self.name):
-				title = serieslinks[self.name]
-				#if serieslinks.has_key(self.name.replace(' ','-')):
-				#	title = serieslinks[self.name.replace(' ','-')]
-			else:
-				title = self.name.replace(' ','-')
+#			if serieslinks.has_key(self.name):   #rb title vorverschoben
+#				title = serieslinks[self.name]
+#				#if serieslinks.has_key(self.name.replace(' ','-')):
+#				#	title = serieslinks[self.name.replace(' ','-')]
+#			else:
+#				title = self.name.replace(' ','-')
 			#logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1') #rb auskommentiert
 			logging.info('Loading: https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-' + str(conf.SZaehler))
 			#webpage = urlopen('https://www.fernsehserien.de/'+title+'/sendetermine/'+senderlink+'/-1').read()
