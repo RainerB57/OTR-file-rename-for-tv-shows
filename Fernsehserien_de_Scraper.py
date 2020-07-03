@@ -131,7 +131,7 @@ class Fernsehserien_de_Scraper(object):
 	######  DOWNLOADING WEBPAGE : Fernsehserien - TimeTable ########
 #	def getTimeTable(self, sender, SZaehler):
 	def getTimeTable(self, sender):
-		logging.info('Trying to get timetable information...please wait...') 
+		logging.info('Trying to get timetable information...please wait...')
 
 		if senderlinks.has_key(sender):
 			senderlink = senderlinks[sender]
@@ -155,8 +155,8 @@ class Fernsehserien_de_Scraper(object):
 		if os.path.isfile(cache):
 			self._test = datetime.datetime.fromtimestamp(os.path.getmtime(cache)).strftime("%Y.%m.%d%H-%M")[2:15] #rb
 		if os.path.isfile(cache) and (self._test > self.SZeit):
-			# bessere Bedingung: Datum der Cachedatei ist neuer als die Sendezeit des Films im Dateinamen 
-			logging.info("Using recent cache file...")	
+			# bessere Bedingung: Datum der Cachedatei ist neuer als die Sendezeit des Films im Dateinamen
+			logging.info("Using recent cache file...")
 			#webpage = urlopen(cache)
 			webpage = urlopen(cache).read()   #rb
 		else:
@@ -191,17 +191,51 @@ class Fernsehserien_de_Scraper(object):
 				season.append(m.group(4))
 				episode.append(m.group(5))
 				title.append(m.group(6))
+		if len(title) == 0:     #test
+			for index, item in enumerate(tddata,0):
+#				                1eptime            2epdate               3-        4-       5season     6episode     7title
+				m = re.search("(\d{2}:\d{2}).*?(\d{2}\.\d{2}\.\d{4}).*?(\d{4}).*?(\d{4}).*?(\d{1,2})x(\d{1,4}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))
+				if type(m) is not NoneType:
+					epdate.append(m.group(2))
+					eptime.append(m.group(1))
+					season.append(m.group(5))
+					episode.append(m.group(6))
+					title.append(m.group(7).replace("-", " "))  # wegen ungewöhnlichen Bindestrichen
+
 		if len(title) == 0:
 			for index, item in enumerate(tddata,0):
 #				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,2}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))
-				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,3}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))  # Episode kann auch 3-stellig sein
+				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,4}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))  # Episode kann auch 4-stellig sein
+				if type(m) is not NoneType:
+					if not(('style' in m.group(5)) or ('smartphone' in m.group(5))):
+						epdate.append(m.group(1))
+						eptime.append(m.group(2))
+						season.append('1')
+						episode.append(m.group(4))
+                    	# leider noch in Titel fehlerhaft: Kleinschreibung und Bindestriche
+						title.append(m.group(5).replace("-", " "))  # wegen ungewöhnlichen Bindestrichen
+
+		if len(title) == 0:     #test2 Wunderschoen und andere  ohne StaffelNr
+			for index, item in enumerate(tddata,0):
+#				                1eptime            2epdate               3-        4-        5episode     6title
+				m = re.search("(\d{2}:\d{2}).*?(\d{2}\.\d{2}\.\d{4}).*?(\d{1,4}).*?(\d{1,4}).*?(\d{1,4}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))
+				if type(m) is not NoneType:
+					epdate.append(m.group(2))
+					eptime.append(m.group(1))
+					season.append('1')
+					episode.append(m.group(5))
+					title.append(m.group(6).replace("-", " "))  # wegen ungewöhnlichen Bindestrichen
+
+		if len(title) == 0:  # bei Wunderschoen notwendig evtl auch bei ??? - kann entfernt werden?
+			for index, item in enumerate(tddata,0):
+				m = re.search("(\d{2}\.\d{2}\.\d{4}).*?(\d{2}:\d{2}).*?(\d{2}:\d{2}).*?(\d{1,3}).*?(\d{1,3}).*?(\d{1,4}).*?([A-Za-z\- öüäÄÖÜß]+)",str(item))  # Episode kann auch 3-stellig sein
 				if type(m) is not NoneType:
 					epdate.append(m.group(1))
 					eptime.append(m.group(2))
 					season.append('1')
-					episode.append(m.group(4))
-                    # leider noch in Titel fehlerhaft: Kleinschreibung und Bindestriche
-					title.append(m.group(5).replace("-", " "))  # wegen ungewöhnlichen Bindestrichen
+					episode.append(m.group(6))
+                   	# leider noch in Titel fehlerhaft: Kleinschreibung und Bindestriche
+					title.append(m.group(7).replace("-", " "))  # wegen ungewöhnlichen Bindestrichen
 
 		return (epdate, season, episode, title, eptime)
 

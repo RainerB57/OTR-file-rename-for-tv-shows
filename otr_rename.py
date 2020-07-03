@@ -101,6 +101,8 @@ class OTR_Rename(object):
 
 		if 'HQ' in self.file:
 			self.Format = 'HQ'
+		elif 'HD' in self.file:
+                        self.Format = 'HD'        
 		else:
 			self.Format = 'DivX'
 		if self.sender[:2] != 'us':
